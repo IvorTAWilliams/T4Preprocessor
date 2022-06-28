@@ -3,22 +3,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using CommandLine;
 using Mono.TextTemplating;
 
 namespace T4Preprocessor
 {
+	[Verb("preprocess", HelpText = "Preprocess T4 files")]
+	public class PreprocessConfiguration
+	{
+	}
 	class Program
 	{
 		static void Main(string[] args)
 		{
-			if (args.Length < 1 || !Directory.Exists(args[0]))
-			{
-				return;
-			}
+			Parser.Default.ParseArguments<PreprocessConfiguration>(args.ToList().Skip(1))
+				.WithParsed<PreprocessConfiguration>(InitialiseAndRun);
+		}
 
-			var nameSpace = FindNamespace(args[0]);
-			
-			Run(args[0], nameSpace);
+		static void InitialiseAndRun(PreprocessConfiguration configuration)
+		{
+			var directory = Directory.GetCurrentDirectory();
+			Console.WriteLine($"	Processing templates for dir {directory}...");
+			var nameSpace = FindNamespace(directory);
+			var count = Run(directory, nameSpace);
+			Console.WriteLine($"	Finished preprocessing {count} T4 templates.");
 		}
 
 		public static string FindNamespace(string root)
@@ -28,25 +36,32 @@ namespace T4Preprocessor
 			{
 				return Path.GetFileNameWithoutExtension(csproj);
 			}
+
 			return FindNamespace(Directory.GetParent(root)?.FullName);
 		}
 
-		public static void Run(string root, string nameSpace)
+		public static int Run(string root, string nameSpace)
 		{
-			var files = Directory.GetFiles(root).Where(x => Path.GetExtension(x) == ".tt");
+			var count = 0;
+			var files = Directory.GetFiles(root).Where(x => Path.GetExtension(x) == ".tt").ToList();
 			var dirs = Directory.GetDirectories(root);
 			foreach (var dir in dirs)
 			{
-				Run(dir, nameSpace);
+				count += Run(dir, nameSpace);
 			}
+
 			var tasks = new List<Task>();
 			foreach (var file in files)
 			{
 				tasks.Add(Task.Run(() => ConvertFile(file, nameSpace)));
 			}
+
+			count += files.Count();
+
 			Task.WaitAll(tasks.ToArray());
+			return count;
 		}
-		
+
 		public static void ConvertFile(string inputFileName, string nameSpace)
 		{
 			var outputFileName = inputFileName.Replace(".tt", ".cs");
@@ -61,8 +76,9 @@ namespace T4Preprocessor
 				out var lang,
 				out var refs,
 				out var contents);
-			
+
 			File.WriteAllText(outputFileName, contents);
 		}
 	}
 }
+

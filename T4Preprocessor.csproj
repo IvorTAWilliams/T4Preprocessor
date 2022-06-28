@@ -3,9 +3,17 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>t4</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+      <PackageId>T4Tools</PackageId>
+      <Version>1.0.0</Version>
+      <Authors>Thomas Williams</Authors>
+      <Company>UpForIt</Company>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.8.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.8.0" />
     <PackageReference Include="Mono.TextTemplating" Version="2.2.1" />
